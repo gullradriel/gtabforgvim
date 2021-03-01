@@ -1,0 +1,72 @@
+#!/bin/bash
+#
+# Bash gvim helper
+#
+
+# usage
+function show_help()
+{
+	echo "command:"
+	echo "gtab [option] file1 file2 ..."
+	echo "options:"
+	echo "-h/-?/--help: usage"
+	echo "-l/--list: list available gvim instances"
+	echo "-s servername/--server servername: user specified gvim server "
+}
+
+
+# parse args
+SERVERNAME="`hostname`:`basename \`pwd\``:$PPID"
+while :; do
+	case $1 in
+		(-h|-\?|--help):
+			show_help
+			exit 0
+			;;
+		(-l|--list):
+			ps -aef |grep -oP "gvim\ *--servername\ *(.*)"|awk '{print $3}'
+			exit 0
+			;;
+		(-s|--server):
+			if [[ -z "$2" ]]
+			then
+				echo "error: specify a server name with -s/--server option"
+				exit 1
+			fi
+			SERVERNAME="$2"
+			shift  
+			shift
+			;;
+		(-?*):
+			printf 'ERR: Unknown option: %s\n' "$1" >&2
+			show_help
+			exit 1
+			;;
+		(*):   
+			# Default case: No more options, so break out of the loop.
+			break
+			;;
+	esac
+done
+
+# test instances
+TEST=`ps -aef |grep -P "gvim --servername ${SERVERNAME}( |$)"|grep -v grep`
+if [[ ! $TEST ]]; then
+	echo "starting gvim id '$SERVERNAME'"
+	gvim --servername "${SERVERNAME}" 
+else
+	# test if trying to start another instance in same dir
+	if [[ -z "$1" ]]
+	then
+		echo "info: an instance of gvim already running for $SERVERNAME"
+		echo "direcly use it or start another instance with a new servername"
+		exit 0 
+	fi
+fi
+
+if [[ $1 ]]; then
+	echo "Tabing ${@} to gvim id '$SERVERNAME'"
+	gvim --servername "${SERVERNAME}" --remote-tab "${@}"
+fi
+
+exit 0 
