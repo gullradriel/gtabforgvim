@@ -1,5 +1,5 @@
-<u>gtab for GVim</u><br />
--open files as tabs in a gvim instance<br />
--list existing instances<br />
--create new instances<br />
--manually specify an instance<br />
+=gtab for GVim
+-open files as tabs in a gvim instance  
+-list existing instances  
+-create new instances  
+-manually specify an instance  
