@@ -1,4 +1,5 @@
 *** gtab for GVim ***
+==
 
 - open files as tabs in a gvim instance  
 - list existing instances  
