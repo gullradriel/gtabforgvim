@@ -1,72 +1,91 @@
-#!/bin/bash
+#!/usr/bin/bash
 #
 # Bash gvim helper
 #
 
+#suppress GTK warning about unknonwn characters. You may adjust/change this if it's causing you problems
+export LC_ALL=C
+
 # usage
 function show_help()
 {
-	echo "command:"
-	echo "gtab [option] file1 file2 ..."
-	echo "options:"
-	echo "-h/-?/--help: usage"
-	echo "-l/--list: list available gvim instances"
-	echo "-s servername/--server servername: user specified gvim server "
+    echo "command:"
+    echo "gtab [option] file1 file2 ..."
+    echo "options:"
+    echo "-h/-?/--help: usage"
+    echo "-l/--list: list available gvim instances"
+    echo "-s servername/--server servername: user specified gvim server "
 }
 
+HOST_UNAME="$(uname -s)"
+host_os=Linux
 
-# parse args
+case "${HOST_UNAME}" in
+    CYGWIN*)    host_os=Cygwin;;
+esac
+
+#Generate unique instance
 SERVERNAME="`hostname`:`basename \`pwd\``:$PPID"
-while :; do
-	case $1 in
-		(-h|-\?|--help):
-			show_help
-			exit 0
-			;;
-		(-l|--list):
-			ps -aef |grep -oP "gvim\ *--servername\ *(.*)"|awk '{print $3}'
-			exit 0
-			;;
-		(-s|--server):
-			if [[ -z "$2" ]]
-			then
-				echo "error: specify a server name with -s/--server option"
-				exit 1
-			fi
-			SERVERNAME="$2"
-			shift  
-			shift
-			;;
-		(-?*):
-			printf 'ERR: Unknown option: %s\n' "$1" >&2
-			show_help
-			exit 1
-			;;
-		(*):   
-			# Default case: No more options, so break out of the loop.
-			break
-			;;
-	esac
-done
 
 # test instances
-TEST=`ps -aef |grep -P "gvim --servername ${SERVERNAME}( |$)"|grep -v grep`
-if [[ ! $TEST ]]; then
-	echo "starting gvim id '$SERVERNAME'"
-	gvim --servername "${SERVERNAME}" 
+SERVERLIST=
+if [ $host_os == "Cygwin" ]
+then 
+    SERVERLIST=$(grep -a "^gvim" /proc/*/cmdline | xargs -0 | cut -c 38-)
 else
-	# test if trying to start another instance in same dir
-	if [[ -z "$1" ]]
-	then
-		echo "info: an instance of gvim already running for $SERVERNAME"
-		echo "direcly use it or start another instance with a new servername"
-		exit 0 
-	fi
+    SERVERLIST=$(ps -aef |grep -oP "gvim\ *--servername\ *(.*)"|awk '{print $3}')
+fi
+
+# parse args
+while :; do
+    case $1 in
+        (-h|-\?|--help):
+            show_help
+            exit 0
+            ;;
+        (-l|--list):
+                echo "$SERVERLIST"
+            exit 0
+            ;;
+        (-s|--server):
+            if [[ -z "$2" ]]
+            then
+                echo "error: specify a server name with -s/--server option"
+                exit 1
+            fi
+            SERVERNAME="$2"
+            shift  
+            shift
+            ;;
+        (-?*):
+            printf 'ERR: Unknown option: %s\n' "$1" >&2
+            show_help
+            exit 1
+            ;;
+        (*):   
+            # Default case: No more options, so break out of the loop.
+            break
+            ;;
+    esac
+done
+
+IS_EXISTING_SERVER=$(echo $SERVERLIST | grep $SERVERNAME)
+if [[ ! $IS_EXISTING_SERVER ]]; then
+    echo "starting gvim id '$SERVERNAME'"
+    gvim --servername "${SERVERNAME}" 
+else
+    # test if trying to start another instance in same dir
+    if [[ -z "$1" ]]
+    then
+        echo "info: an instance of gvim already running for $SERVERNAME"
+        echo "direcly use it or start another instance with a new servername"
+        exit 0 
+    fi
 fi
 
 if [[ $1 ]]; then
-	echo "Tabing ${@} to gvim id '$SERVERNAME'"
-	gvim --servername "${SERVERNAME}" --remote-tab "${@}"
+    echo "Tabing ${@} to gvim id '$SERVERNAME'"
+    gvim --servername "${SERVERNAME}" --remote-tab "${@}"
 fi
 
 exit 0 
