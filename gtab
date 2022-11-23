@@ -22,6 +22,8 @@ host_os=Linux
 
 case "${HOST_UNAME}" in
     CYGWIN*)    host_os=Cygwin;;
+    Linux*)     host_os=Linux;;
+    SunOS*)     host_os=Solaris;;
 esac
 
 #Generate unique instance
@@ -29,11 +31,11 @@ SERVERNAME="`hostname`:`basename \`pwd\``:$PPID"
 
 # test instances
 SERVERLIST=
-if [ $host_os == "Cygwin" ]
+if [ $host_os == "Solaris" ]
 then 
-    SERVERLIST=$(grep -a "^gvim" /proc/*/cmdline | xargs -0 | cut -c 38-)
+    SERVERLIST=$( grep "^gvim" /proc/*/cmdline |xargs -0 -n 3|awk '{print $3}')
 else
-    SERVERLIST=$(ps -aef |grep -oP "gvim\ *--servername\ *(.*)"|awk '{print $3}')
+    SERVERLIST=$(grep -a "^gvim" /proc/*/cmdline |xargs -0|awk -F ' ' '{print $3}')
 fi
 
 # parse args
